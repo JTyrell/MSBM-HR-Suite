@@ -22,7 +22,7 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-12">
         <div>
           <h1 className="font-display text-3xl font-bold text-sidebar-foreground tracking-tight">
-            MSBMHR<span className="text-primary">_Suite</span>
+            MSBM-HR <span className="text-primary">Suite</span>
           </h1>
           <p className="text-sidebar-foreground/60 mt-1 text-sm">AI-Agentic HRM Platform</p>
         </div>
@@ -31,7 +31,7 @@ export default function Auth() {
           <Feature icon={<Clock className="h-5 w-5" />} title="Automated Payroll" desc="Smart payroll engine with anomaly detection & tax compliance" />
           <Feature icon={<Shield className="h-5 w-5" />} title="Enterprise Security" desc="Role-based access, encrypted data, and audit trails" />
         </div>
-        <p className="text-sidebar-foreground/40 text-xs">© 2026 MSBMHR Suite. All rights reserved.</p>
+        <p className="text-sidebar-foreground/40 text-xs">© 2026 MSBM-HR Suite. All rights reserved.</p>
       </div>
 
       {/* Right auth form */}
@@ -39,7 +39,7 @@ export default function Auth() {
         <div className="w-full max-w-md">
           <div className="lg:hidden mb-8 text-center">
             <h1 className="font-display text-2xl font-bold tracking-tight">
-              MSBMHR<span className="text-primary">_Suite</span>
+              MSBM-HR <span className="text-primary">Suite</span>
             </h1>
           </div>
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
@@ -132,7 +132,7 @@ function SignupForm({ onSuccess }: { onSuccess: () => void }) {
     <Card>
       <CardHeader>
         <CardTitle className="font-display">Create account</CardTitle>
-        <CardDescription>Get started with MSBMHR Suite</CardDescription>
+        <CardDescription>Get started with MSBM-HR Suite</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">

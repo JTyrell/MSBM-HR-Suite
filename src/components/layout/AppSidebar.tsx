@@ -60,7 +60,7 @@ export default function AppSidebar() {
         <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border", collapsed && "justify-center")}>
           {!collapsed && (
             <h1 className="font-display text-lg font-bold tracking-tight truncate">
-              MSBMHR<span className="text-primary">_Suite</span>
+              MSBM-HR <span className="text-primary">Suite</span>
             </h1>
           )}
           <button
