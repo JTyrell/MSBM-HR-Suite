@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, MapPin, Clock, DollarSign, Users, Settings, LogOut, Map, ChevronLeft, Menu,
+  LayoutDashboard, MapPin, Clock, DollarSign, Users, Settings, LogOut, Map, ChevronLeft, Menu, Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const adminNav = [
   { label: "Geofences", icon: Map, href: "/geofences" },
   { label: "Employees", icon: Users, href: "/employees" },
   { label: "Payroll", icon: DollarSign, href: "/payroll" },
+  { label: "CRM Panel", icon: Shield, href: "/crm" },
   { label: "Settings", icon: Settings, href: "/settings" },
 ];
 

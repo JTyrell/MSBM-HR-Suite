@@ -15,6 +15,7 @@ import Employees from "./pages/Employees";
 import Payroll from "./pages/Payroll";
 import PayStubs from "./pages/PayStubs";
 import SettingsPage from "./pages/Settings";
+import CRMPage from "./pages/CRM";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/payroll" element={<Payroll />} />
               <Route path="/pay-stubs" element={<PayStubs />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/crm" element={<CRMPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
