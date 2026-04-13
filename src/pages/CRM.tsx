@@ -47,6 +47,7 @@ export default function CRMPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
   // Selections for bulk
@@ -132,69 +133,93 @@ export default function CRMPage() {
     });
   };
 
+  const MAX_FIELD_LEN = 255;
+  const sanitize = (val: string) => val.trim().slice(0, MAX_FIELD_LEN);
+
   const saveUser = async () => {
-    if (!editUser) return;
+    if (!editUser || saving) return;
+    const firstName = sanitize(editForm.first_name);
+    const lastName = sanitize(editForm.last_name);
+    if (!firstName || !lastName) { toast.error("First and last name are required"); return; }
+    setSaving(true);
     const updates = {
-      first_name: editForm.first_name.trim(), last_name: editForm.last_name.trim(),
-      phone: editForm.phone.trim() || null, job_title: editForm.job_title.trim() || null,
-      department_id: editForm.department_id || null, pay_rate: Number(editForm.pay_rate) || 0,
+      first_name: firstName, last_name: lastName,
+      phone: sanitize(editForm.phone) || null, job_title: sanitize(editForm.job_title) || null,
+      department_id: editForm.department_id || null, pay_rate: Math.max(0, Number(editForm.pay_rate) || 0),
       pay_type: editForm.pay_type as "hourly" | "salary", status: editForm.status,
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", editUser.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(error.message); setSaving(false); return; }
     await logAudit("user_updated", "profile", editUser.id, { changes: updates, user_name: `${editUser.first_name} ${editUser.last_name}` });
     toast.success("User updated");
     setEditUser(null);
+    setSaving(false);
     fetchAll();
   };
 
   // --- Role Management ---
   const addRole = async () => {
-    if (!roleDialog) return;
+    if (!roleDialog || saving) return;
+    setSaving(true);
     const { error } = await supabase.from("user_roles").insert({ user_id: roleDialog.userId, role: newRole as any });
-    if (error) { toast.error(error.code === "23505" ? "User already has this role" : error.message); return; }
+    if (error) { toast.error(error.code === "23505" ? "User already has this role" : error.message); setSaving(false); return; }
     await logAudit("role_added", "user_role", roleDialog.userId, { role: newRole, user_name: roleDialog.userName });
     toast.success("Role added");
     setRoleDialog(null);
+    setSaving(false);
     fetchAll();
   };
 
   const removeRole = async (roleId: string, roleName?: string, userName?: string) => {
+    if (saving) return;
+    if (!confirm(`Remove the "${roleName}" role from ${userName || "this user"}?`)) return;
+    setSaving(true);
     const { error } = await supabase.from("user_roles").delete().eq("id", roleId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(error.message); setSaving(false); return; }
     await logAudit("role_removed", "user_role", roleId, { role: roleName, user_name: userName });
     toast.success("Role removed");
+    setSaving(false);
     fetchAll();
   };
 
   // --- Department Management ---
   const saveDept = async () => {
-    if (!deptForm.name.trim()) { toast.error("Name required"); return; }
+    if (saving) return;
+    const deptName = sanitize(deptForm.name);
+    if (!deptName) { toast.error("Name required"); return; }
+    if (deptName.length < 2) { toast.error("Department name must be at least 2 characters"); return; }
+    setSaving(true);
     if (editDept) {
-      const { error } = await supabase.from("departments").update({ name: deptForm.name.trim(), description: deptForm.description.trim() || null }).eq("id", editDept.id);
-      if (error) { toast.error(error.message); return; }
-      await logAudit("dept_updated", "department", editDept.id, { name: deptForm.name });
+      const { error } = await supabase.from("departments").update({ name: deptName, description: sanitize(deptForm.description) || null }).eq("id", editDept.id);
+      if (error) { toast.error(error.message); setSaving(false); return; }
+      await logAudit("dept_updated", "department", editDept.id, { name: deptName });
       toast.success("Department updated");
     } else {
-      const { data, error } = await supabase.from("departments").insert({ name: deptForm.name.trim(), description: deptForm.description.trim() || null }).select("id").single();
-      if (error) { toast.error(error.message); return; }
-      await logAudit("dept_created", "department", data?.id, { name: deptForm.name });
+      const { data, error } = await supabase.from("departments").insert({ name: deptName, description: sanitize(deptForm.description) || null }).select("id").single();
+      if (error) { toast.error(error.message); setSaving(false); return; }
+      await logAudit("dept_created", "department", data?.id, { name: deptName });
       toast.success("Department created");
     }
     setDeptDialog(false); setEditDept(null); setDeptForm({ name: "", description: "" });
+    setSaving(false);
     fetchAll();
   };
 
   const deleteDept = async (id: string, name?: string) => {
+    if (saving) return;
+    if (!confirm(`Permanently delete department "${name || id}"? Employees in this department will be unassigned.`)) return;
+    setSaving(true);
     const { error } = await supabase.from("departments").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(error.message); setSaving(false); return; }
     await logAudit("dept_deleted", "department", id, { name });
     toast.success("Department deleted");
+    setSaving(false);
     fetchAll();
   };
 
   // --- Bulk Actions ---
   const executeBulk = async () => {
+    if (saving) return;
     if (selectedUsers.size === 0) { toast.error("No users selected"); return; }
     const ids = Array.from(selectedUsers);
     const names = ids.map((id) => {
@@ -202,14 +227,15 @@ export default function CRMPage() {
       return p ? `${p.first_name} ${p.last_name}` : id;
     });
 
+    setSaving(true);
     if (bulkAction === "status") {
       const { error } = await supabase.from("profiles").update({ status: bulkValue }).in("id", ids);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(error.message); setSaving(false); return; }
       await logAudit("bulk_status_change", "profile", null, { count: ids.length, status: bulkValue, users: names });
       toast.success(`Updated ${ids.length} user(s) to ${bulkValue}`);
     } else if (bulkAction === "department") {
       const { error } = await supabase.from("profiles").update({ department_id: bulkValue || null }).in("id", ids);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(error.message); setSaving(false); return; }
       const dept = departments.find((d) => d.id === bulkValue);
       await logAudit("bulk_department_change", "profile", null, { count: ids.length, department: dept?.name || "None", users: names });
       toast.success(`Moved ${ids.length} user(s)`);
@@ -225,6 +251,7 @@ export default function CRMPage() {
       toast.success(`Added role to ${successCount} user(s)`);
     }
     setBulkDialog(false); setBulkAction(""); setBulkValue(""); setSelectedUsers(new Set());
+    setSaving(false);
     fetchAll();
   };
 
@@ -598,7 +625,7 @@ export default function CRMPage() {
               </div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setEditUser(null)}>Cancel</Button><Button onClick={saveUser}>Save Changes</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setEditUser(null)} disabled={saving}>Cancel</Button><Button onClick={saveUser} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -626,7 +653,7 @@ export default function CRMPage() {
               <div className="flex-1 space-y-2"><Label>Add Role</Label>
                 <Select value={newRole} onValueChange={setNewRole}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="admin">Admin</SelectItem><SelectItem value="hr_manager">HR Manager</SelectItem><SelectItem value="employee">Employee</SelectItem></SelectContent></Select>
               </div>
-              <Button onClick={addRole}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+              <Button onClick={addRole} disabled={saving}><Plus className="h-4 w-4 mr-1" /> {saving ? "Adding..." : "Add"}</Button>
             </div>
           </div>
         </DialogContent>
@@ -640,7 +667,7 @@ export default function CRMPage() {
             <div className="space-y-2"><Label>Name</Label><Input value={deptForm.name} onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })} /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={deptForm.description} onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })} rows={3} /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => { setDeptDialog(false); setEditDept(null); }}>Cancel</Button><Button onClick={saveDept}>{editDept ? "Update" : "Create"}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => { setDeptDialog(false); setEditDept(null); }} disabled={saving}>Cancel</Button><Button onClick={saveDept} disabled={saving}>{saving ? "Saving..." : (editDept ? "Update" : "Create")}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -667,7 +694,7 @@ export default function CRMPage() {
               </div>
             )}
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setBulkDialog(false)}>Cancel</Button><Button onClick={executeBulk}>Apply to {selectedUsers.size} Users</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setBulkDialog(false)} disabled={saving}>Cancel</Button><Button onClick={executeBulk} disabled={saving}>{saving ? "Applying..." : `Apply to ${selectedUsers.size} Users`}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
