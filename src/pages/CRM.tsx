@@ -631,6 +631,17 @@ export default function CRMPage() {
                 </Select>
               </div>
             </div>
+            {jaComplianceEnabled && editUser && (
+              <div className="border-t pt-4 mt-4">
+                <JaComplianceFields
+                  profileId={editUser.id}
+                  initialData={editUser as any}
+                  roleTiers={roleTiers}
+                  managers={profiles.filter((p) => p.id !== editUser.id).map((p) => ({ user_id: p.user_id, first_name: p.first_name, last_name: p.last_name }))}
+                  onUpdate={fetchAll}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setEditUser(null)} disabled={saving}>Cancel</Button><Button onClick={saveUser} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button></DialogFooter>
         </DialogContent>
