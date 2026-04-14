@@ -65,10 +65,16 @@ export default function JaComplianceFields({
   const save = async () => {
     if (!validate()) return;
     setSaving(true);
-    const updates: Record<string, string | null> = {};
-    for (const [key, value] of Object.entries(form)) {
-      updates[key] = value || null;
-    }
+    const updates = {
+      trn: form.trn || null,
+      nis_number: form.nis_number || null,
+      nht_number: form.nht_number || null,
+      paye_tax_code: form.paye_tax_code || null,
+      contract_type: form.contract_type || null,
+      grade_step: form.grade_step || null,
+      role_tier: form.role_tier || null,
+      reporting_manager_id: form.reporting_manager_id || null,
+    };
     const { error } = await supabase.from("profiles").update(updates).eq("id", profileId);
     if (error) {
       toast.error(error.message);
