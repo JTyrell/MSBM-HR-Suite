@@ -79,16 +79,20 @@ export default function CRMPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [p, r, d, a] = await Promise.all([
+    const [p, r, d, a, ff, rt] = await Promise.all([
       supabase.from("profiles").select("*, departments(name)").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("*"),
       supabase.from("departments").select("*").order("name"),
       supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("feature_flags").select("key, enabled").eq("key", "enabled_ja_compliance").single(),
+      supabase.from("role_tiers").select("id, name, level").order("level"),
     ]);
     setProfiles((p.data as Profile[]) || []);
     setRoles((r.data as UserRole[]) || []);
     setDepartments((d.data as Department[]) || []);
     setAuditLogs((a.data as AuditLog[]) || []);
+    setJaComplianceEnabled(ff.data?.enabled === true);
+    setRoleTiers((rt.data as any[]) || []);
     setLoading(false);
   }, []);
 
