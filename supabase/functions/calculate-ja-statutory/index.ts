@@ -88,14 +88,15 @@ serve(async (req) => {
       const rateInfo = rateMap.get(rateType);
       if (!rateInfo) return { rate: 0, amount: 0, ceiling: null, capped: false };
 
-      const rate = Number(rateInfo.rate_value);
+      const ratePercent = Number(rateInfo.rate_value);
+      const rate = ratePercent / 100; // Convert percentage to decimal
       const ceiling = rateInfo.ceiling_amount ? Number(rateInfo.ceiling_amount) : null;
       
       // Apply ceiling: if base exceeds ceiling, only calculate on the ceiling amount
       const taxableBase = ceiling ? Math.min(base, ceiling) : base;
       const amount = Math.round(taxableBase * rate * 100) / 100;
       
-      return { rate, amount, ceiling, capped: ceiling !== null && base > ceiling };
+      return { rate: ratePercent, amount, ceiling, capped: ceiling !== null && base > ceiling };
     };
 
     // Use annual gross for ceiling comparisons if provided, otherwise annualize
