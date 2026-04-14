@@ -25,6 +25,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Check if JA compliance is enabled
+    const { data: jaFlag } = await supabase
+      .from("feature_flags")
+      .select("enabled")
+      .eq("key", "enabled_ja_compliance")
+      .single();
+
+    const jaComplianceEnabled = jaFlag?.enabled === true;
+
     // Get pay period
     const { data: period, error: periodError } = await supabase
       .from("pay_periods")
@@ -50,6 +59,27 @@ serve(async (req) => {
         JSON.stringify({ error: "No active employees found", records_created: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // If JA compliance is enabled, fetch statutory rates
+    let statutoryRates: any[] = [];
+    if (jaComplianceEnabled) {
+      const effectiveDate = period.end_date;
+      const { data: rates } = await supabase
+        .from("statutory_rates")
+        .select("*")
+        .lte("effective_from", effectiveDate)
+        .or(`expires_on.is.null,expires_on.gte.${effectiveDate}`)
+        .order("effective_from", { ascending: false });
+      statutoryRates = rates || [];
+    }
+
+    // Build rate lookup map
+    const rateMap = new Map<string, any>();
+    for (const rate of statutoryRates) {
+      if (!rateMap.has(rate.rate_type)) {
+        rateMap.set(rate.rate_type, rate);
+      }
     }
 
     let recordsCreated = 0;
@@ -95,10 +125,65 @@ serve(async (req) => {
         grossPay = payRate / 26;
       }
 
-      // Simple deductions (placeholder percentages)
-      const taxDeductions = grossPay * 0.22; // ~22% combined tax
-      const benefitDeductions = grossPay * 0.05; // ~5% benefits
-      const netPay = grossPay - taxDeductions - benefitDeductions;
+      let taxDeductions: number;
+      let benefitDeductions: number;
+      let otherDeductions = 0;
+      let notes = "";
+
+      if (jaComplianceEnabled) {
+        // Use Jamaican statutory engine
+        const calcDeduction = (rateType: string, base: number) => {
+          const rateInfo = rateMap.get(rateType);
+          if (!rateInfo) return 0;
+          const rate = Number(rateInfo.rate_value) / 100; // Convert percentage to decimal
+          const ceiling = rateInfo.ceiling_amount ? Number(rateInfo.ceiling_amount) : null;
+          const taxableBase = ceiling ? Math.min(base, ceiling) : base;
+          return Math.round(taxableBase * rate * 100) / 100;
+        };
+
+        const nisEmployee = calcDeduction("nis_employee", grossPay);
+        const nhtEmployee = calcDeduction("nht_employee", grossPay);
+        const edTaxEmployee = calcDeduction("education_tax_employee", grossPay);
+
+        // PAYE calculation
+        let payeAmount = 0;
+        const payeThreshold = rateMap.get("paye_threshold");
+        const payeStandard = rateMap.get("paye_standard");
+        const payeHigher = rateMap.get("paye_higher");
+
+        if (payeThreshold && payeStandard) {
+          const monthlyThreshold = Number(payeThreshold.ceiling_amount || 0) / 12;
+          const taxableIncome = Math.max(0, grossPay - monthlyThreshold);
+
+          if (payeHigher && payeHigher.ceiling_amount) {
+            const higherBracketStart = Number(payeHigher.ceiling_amount) / 12;
+            const standardBracket = Math.min(taxableIncome, Math.max(0, higherBracketStart - monthlyThreshold));
+            const higherBracket = Math.max(0, taxableIncome - standardBracket);
+            payeAmount = Math.round(
+              (standardBracket * (Number(payeStandard.rate_value) / 100) + higherBracket * (Number(payeHigher.rate_value) / 100)) * 100
+            ) / 100;
+          } else {
+            payeAmount = Math.round(taxableIncome * (Number(payeStandard.rate_value) / 100) * 100) / 100;
+          }
+        }
+
+        // Apply PAYE tax code adjustments
+        if (employee.paye_tax_code === "E") {
+          payeAmount = 0;
+        } else if (employee.paye_tax_code === "C") {
+          payeAmount = Math.round(payeAmount * 0.5 * 100) / 100;
+        }
+
+        taxDeductions = payeAmount;
+        benefitDeductions = nisEmployee + nhtEmployee + edTaxEmployee;
+        notes = `JA Statutory: NIS=${nisEmployee}, NHT=${nhtEmployee}, EdTax=${edTaxEmployee}, PAYE=${payeAmount}`;
+      } else {
+        // Legacy: flat rates
+        taxDeductions = grossPay * 0.22;
+        benefitDeductions = grossPay * 0.05;
+      }
+
+      const netPay = grossPay - taxDeductions - benefitDeductions - otherDeductions;
 
       // Upsert payroll record
       const { error: upsertError } = await supabase
@@ -112,9 +197,10 @@ serve(async (req) => {
           gross_pay: Math.round(grossPay * 100) / 100,
           tax_deductions: Math.round(taxDeductions * 100) / 100,
           benefit_deductions: Math.round(benefitDeductions * 100) / 100,
-          other_deductions: 0,
+          other_deductions: Math.round(otherDeductions * 100) / 100,
           net_pay: Math.round(netPay * 100) / 100,
           status: "calculated",
+          notes: notes || null,
         }, { onConflict: "user_id,pay_period_id" });
 
       if (!upsertError) recordsCreated++;
@@ -127,7 +213,11 @@ serve(async (req) => {
       .eq("id", pay_period_id);
 
     return new Response(
-      JSON.stringify({ success: true, records_created: recordsCreated }),
+      JSON.stringify({ 
+        success: true, 
+        records_created: recordsCreated,
+        ja_compliance_enabled: jaComplianceEnabled,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

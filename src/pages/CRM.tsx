@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import JaComplianceFields from "@/components/compliance/JaComplianceFields";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,10 @@ type Profile = {
   job_title: string | null; pay_rate: number; pay_type: "hourly" | "salary";
   hire_date: string | null; status: string; avatar_url: string | null;
   created_at: string; departments?: { name: string } | null;
+  trn?: string | null; nis_number?: string | null; nht_number?: string | null;
+  paye_tax_code?: string | null; contract_type?: string | null;
+  grade_step?: string | null; role_tier?: string | null;
+  reporting_manager_id?: string | null;
 };
 type UserRole = { id: string; user_id: string; role: "admin" | "hr_manager" | "employee"; created_at: string };
 type Department = { id: string; name: string; description: string | null; created_at: string };
@@ -47,6 +52,8 @@ export default function CRMPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [jaComplianceEnabled, setJaComplianceEnabled] = useState(false);
+  const [roleTiers, setRoleTiers] = useState<{ id: string; name: string; level: number }[]>([]);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -76,16 +83,20 @@ export default function CRMPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [p, r, d, a] = await Promise.all([
+    const [p, r, d, a, ff, rt] = await Promise.all([
       supabase.from("profiles").select("*, departments(name)").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("*"),
       supabase.from("departments").select("*").order("name"),
       supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("feature_flags").select("key, enabled").eq("key", "enabled_ja_compliance").single(),
+      supabase.from("role_tiers").select("id, name, level").order("level"),
     ]);
     setProfiles((p.data as Profile[]) || []);
     setRoles((r.data as UserRole[]) || []);
     setDepartments((d.data as Department[]) || []);
     setAuditLogs((a.data as AuditLog[]) || []);
+    setJaComplianceEnabled(ff.data?.enabled === true);
+    setRoleTiers((rt.data as any[]) || []);
     setLoading(false);
   }, []);
 
@@ -624,6 +635,17 @@ export default function CRMPage() {
                 </Select>
               </div>
             </div>
+            {jaComplianceEnabled && editUser && (
+              <div className="border-t pt-4 mt-4">
+                <JaComplianceFields
+                  profileId={editUser.id}
+                  initialData={editUser as any}
+                  roleTiers={roleTiers}
+                  managers={profiles.filter((p) => p.id !== editUser.id).map((p) => ({ user_id: p.user_id, first_name: p.first_name, last_name: p.last_name }))}
+                  onUpdate={fetchAll}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setEditUser(null)} disabled={saving}>Cancel</Button><Button onClick={saveUser} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button></DialogFooter>
         </DialogContent>
