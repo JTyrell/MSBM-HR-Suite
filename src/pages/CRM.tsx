@@ -26,6 +26,10 @@ type Profile = {
   job_title: string | null; pay_rate: number; pay_type: "hourly" | "salary";
   hire_date: string | null; status: string; avatar_url: string | null;
   created_at: string; departments?: { name: string } | null;
+  trn?: string | null; nis_number?: string | null; nht_number?: string | null;
+  paye_tax_code?: string | null; contract_type?: string | null;
+  grade_step?: string | null; role_tier?: string | null;
+  reporting_manager_id?: string | null;
 };
 type UserRole = { id: string; user_id: string; role: "admin" | "hr_manager" | "employee"; created_at: string };
 type Department = { id: string; name: string; description: string | null; created_at: string };
