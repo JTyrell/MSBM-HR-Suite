@@ -48,6 +48,8 @@ export default function CRMPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [jaComplianceEnabled, setJaComplianceEnabled] = useState(false);
+  const [roleTiers, setRoleTiers] = useState<{ id: string; name: string; level: number }[]>([]);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
