@@ -107,9 +107,8 @@ serve(async (req) => {
     // If there's an annual ceiling, we need to check against annualized amount
     const nisEmployeeCeiling = rateMap.get("nis_employee")?.ceiling_amount;
     if (nisEmployeeCeiling && annualGross > Number(nisEmployeeCeiling)) {
-      // Cap contribution at ceiling / 12 per month
       const monthlyCeiling = Number(nisEmployeeCeiling) / 12;
-      nisEmployee.amount = Math.round(monthlyCeiling * nisEmployee.rate * 100) / 100;
+      nisEmployee.amount = Math.round(monthlyCeiling * (nisEmployee.rate / 100) * 100) / 100;
       nisEmployee.capped = true;
     }
 
@@ -137,10 +136,10 @@ serve(async (req) => {
         const higherBracket = Math.max(0, taxableIncome - standardBracket);
         
         payeAmount = Math.round(
-          (standardBracket * Number(payeRate.rate) + higherBracket * Number(payeHigherRate.rate_value)) * 100
+          (standardBracket * (Number(payeRate.rate) / 100) + higherBracket * (Number(payeHigherRate.rate_value) / 100)) * 100
         ) / 100;
       } else {
-        payeAmount = Math.round(taxableIncome * Number(payeRate.rate) * 100) / 100;
+        payeAmount = Math.round(taxableIncome * (Number(payeRate.rate) / 100) * 100) / 100;
       }
     } else {
       // Fallback: flat rate
