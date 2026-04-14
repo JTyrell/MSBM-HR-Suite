@@ -149,7 +149,7 @@ serve(async (req) => {
   } catch (error) {
     const headers2 = corsHeaders(req.headers.get("origin"));
     return new Response(
-      JSON.stringify({ valid: false, message: error.message }),
+      JSON.stringify({ valid: false, message: (error as Error).message }),
       { headers: { ...headers2, "Content-Type": "application/json" }, status: 500 }
     );
   }
