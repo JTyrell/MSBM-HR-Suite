@@ -135,7 +135,7 @@ serve(async (req) => {
         const calcDeduction = (rateType: string, base: number) => {
           const rateInfo = rateMap.get(rateType);
           if (!rateInfo) return 0;
-          const rate = Number(rateInfo.rate_value);
+          const rate = Number(rateInfo.rate_value) / 100; // Convert percentage to decimal
           const ceiling = rateInfo.ceiling_amount ? Number(rateInfo.ceiling_amount) : null;
           const taxableBase = ceiling ? Math.min(base, ceiling) : base;
           return Math.round(taxableBase * rate * 100) / 100;
@@ -160,10 +160,10 @@ serve(async (req) => {
             const standardBracket = Math.min(taxableIncome, Math.max(0, higherBracketStart - monthlyThreshold));
             const higherBracket = Math.max(0, taxableIncome - standardBracket);
             payeAmount = Math.round(
-              (standardBracket * Number(payeStandard.rate_value) + higherBracket * Number(payeHigher.rate_value)) * 100
+              (standardBracket * (Number(payeStandard.rate_value) / 100) + higherBracket * (Number(payeHigher.rate_value) / 100)) * 100
             ) / 100;
           } else {
-            payeAmount = Math.round(taxableIncome * Number(payeStandard.rate_value) * 100) / 100;
+            payeAmount = Math.round(taxableIncome * (Number(payeStandard.rate_value) / 100) * 100) / 100;
           }
         }
 
