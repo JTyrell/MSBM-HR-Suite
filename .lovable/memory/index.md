@@ -14,3 +14,4 @@ Feature flags: enabled_ja_compliance, enabled_workforce_mgmt — gate new featur
 - [Geofence system](mem://features/geofences) — Haversine distance validation in edge function, circle-based geofences with configurable radius
 - [Payroll engine](mem://features/payroll) — Edge function calculates hours from attendance, 22% tax / 5% benefits placeholders, overtime at 40hrs/week
 - [Phase 1 tables](mem://features/phase1-tables) — 15 new tables for JA compliance + workforce management foundation
+- [Phase 2 statutory engine](mem://features/phase2-statutory) — JA statutory calc edge function, Zod validation for TRN/NIS/PAYE, compliance fields in CRM
