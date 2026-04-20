@@ -1,3 +1,5 @@
+ 
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,8 +31,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isHR: boolean;
   isEmployee: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, meta?: { first_name?: string; last_name?: string }) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: unknown }>;
   signOut: () => Promise<void>;
 }
 
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    if (data) setRoles(data.map((r: any) => r.role as AppRole));
+    if (data) setRoles(data.map((r: Record<string, unknown>) => r.role as AppRole));
   };
 
   useEffect(() => {
@@ -96,17 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, meta?: { first_name?: string; last_name?: string }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: meta,
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error };
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -119,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isEmployee = roles.includes("employee");
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, isAdmin, isHR, isEmployee, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, roles, loading, isAdmin, isHR, isEmployee, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

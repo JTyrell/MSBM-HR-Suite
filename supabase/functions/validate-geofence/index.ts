@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
- * validate-geofence — Supabase Edge Function
+ * validate-geofence â€” Supabase Edge Function
  *
  * Security improvements:
  * 1. Extracts user_id from the JWT (Authorization header) instead of trusting the request body
@@ -32,7 +34,7 @@ serve(async (req) => {
   }
 
   try {
-    // ── 1. Authenticate caller via JWT ──────────────────────
+    // â”€â”€ 1. Authenticate caller via JWT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const authHeader = req.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return new Response(
@@ -60,7 +62,7 @@ serve(async (req) => {
 
     const userId = user.id;
 
-    // ── 2. Parse and validate body ──────────────────────────
+    // â”€â”€ 2. Parse and validate body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const body = await req.json();
     const { latitude, longitude } = body;
 
@@ -78,7 +80,7 @@ serve(async (req) => {
       );
     }
 
-    // ── 3. Look up employee profile ─────────────────────────
+    // â”€â”€ 3. Look up employee profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("id")
@@ -92,7 +94,7 @@ serve(async (req) => {
       );
     }
 
-    // ── 4. Determine which geofences to check ───────────────
+    // â”€â”€ 4. Determine which geofences to check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const { data: assignments } = await supabaseAdmin
       .from("employee_geofences")
       .select("geofence_id")
@@ -101,18 +103,18 @@ serve(async (req) => {
     let geofenceQuery = supabaseAdmin.from("geofences").select("*").eq("is_active", true);
 
     if (assignments && assignments.length > 0) {
-      const ids = assignments.map((a: any) => a.geofence_id);
+      const ids = assignments.map((a: Record<string, any>) => a.geofence_id);
       geofenceQuery = geofenceQuery.in("id", ids);
     }
 
     const { data: geofences } = await geofenceQuery;
 
     if (!geofences || geofences.length === 0) {
-      // No geofences configured — allow clock-in (first-time setup)
+      // No geofences configured â€” allow clock-in (first-time setup)
       return new Response(
         JSON.stringify({
           valid: true,
-          message: "No geofences configured – clock-in allowed",
+          message: "No geofences configured â€“ clock-in allowed",
           geofence_id: null,
           geofence_name: "Unassigned",
         }),
@@ -120,7 +122,7 @@ serve(async (req) => {
       );
     }
 
-    // ── 5. Check if point is within any geofence ────────────
+    // â”€â”€ 5. Check if point is within any geofence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     for (const geofence of geofences) {
       const distance = haversineDistance(
         latitude,
@@ -155,7 +157,7 @@ serve(async (req) => {
   }
 });
 
-// ── Haversine distance (meters) ─────────────────────────────
+// â”€â”€ Haversine distance (meters) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000; // Earth's radius in meters
   const dLat = toRad(lat2 - lat1);

@@ -39,7 +39,7 @@ export default function ClockInOut() {
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [activeRecord, setActiveRecord] = useState<any>(null);
+  const [activeRecord, setActiveRecord] = useState<Record<string, unknown> | null>(null);
   const [lastAction, setLastAction] = useState<{
     type: string;
     success: boolean;
@@ -133,7 +133,7 @@ export default function ClockInOut() {
         .eq("is_active", true);
 
       if (geofences && geofences.length > 0) {
-        geofences.forEach((g: any, idx: number) => {
+        geofences.forEach((g: Record<string, unknown>, idx: number) => {
           const lat = Number(g.latitude);
           const lng = Number(g.longitude);
           const radius = Number(g.radius_meters) || 100;
@@ -169,7 +169,7 @@ export default function ClockInOut() {
         // Fit bounds to include user + all fences
         const bounds = new mapboxgl.LngLatBounds();
         bounds.extend([coords.lng, coords.lat]);
-        geofences.forEach((g: any) =>
+        geofences.forEach((g: Record<string, unknown>) =>
           bounds.extend([Number(g.longitude), Number(g.latitude)])
         );
         map.fitBounds(bounds, { padding: 60, maxZoom: 16 });
@@ -184,7 +184,6 @@ export default function ClockInOut() {
       userMarkerRef.current = null;
     };
     // Only re-init when coords first become available
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coords]);
 
   const handleClockIn = async () => {
@@ -224,9 +223,11 @@ export default function ClockInOut() {
       });
       toast.success("Clock-in successful!");
       fetchActiveRecord();
-    } catch (err: any) {
-      toast.error(err.message);
-      setLastAction({ type: "clock-in", success: false, message: err.message });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+        setLastAction({ type: "clock-in", success: false, message: err.message });
+      }
     }
     setLoading(false);
   };
@@ -252,13 +253,15 @@ export default function ClockInOut() {
       });
       toast.success("Clock-out successful!");
       setActiveRecord(null);
-    } catch (err: any) {
-      toast.error(err.message);
-      setLastAction({
-        type: "clock-out",
-        success: false,
-        message: err.message,
-      });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+        setLastAction({
+          type: "clock-out",
+          success: false,
+          message: err.message,
+        });
+      }
     }
     setLoading(false);
   };

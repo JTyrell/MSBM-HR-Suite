@@ -1,29 +1,20 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, MapPin, Clock, DollarSign, Users, Settings, LogOut, Map, ChevronLeft, Menu, Shield,
+  LayoutDashboard, MapPin, Clock, DollarSign, Users, Settings, LogOut, Map,
+  ChevronLeft, Menu, Shield, Calendar, MessageSquare, BarChart3, CalendarClock, Umbrella,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-const adminNav = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/" },
-  { label: "Attendance", icon: Clock, href: "/attendance" },
-  { label: "Geofences", icon: Map, href: "/geofences" },
-  { label: "Employees", icon: Users, href: "/employees" },
-  { label: "Payroll", icon: DollarSign, href: "/payroll" },
-  { label: "CRM Panel", icon: Shield, href: "/crm" },
-  { label: "Settings", icon: Settings, href: "/settings" },
-];
-
-const employeeNav = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/" },
-  { label: "Clock In/Out", icon: MapPin, href: "/clock" },
-  { label: "My Attendance", icon: Clock, href: "/attendance" },
-  { label: "Pay Stubs", icon: DollarSign, href: "/pay-stubs" },
-  { label: "Settings", icon: Settings, href: "/settings" },
-];
+interface NavItem {
+  label: string;
+  icon: React.ElementType;
+  href: string;
+  flag?: string; // feature flag key — if set, item only shows when flag is enabled
+}
 
 export default function AppSidebar() {
   const { profile, isAdmin, isHR, signOut } = useAuth();
@@ -31,7 +22,60 @@ export default function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav = isAdmin || isHR ? adminNav : employeeNav;
+  // Feature flags
+  const wfmEnabled = useFeatureFlag("enabled_workforce_mgmt");
+  const msgEnabled = useFeatureFlag("enabled_messaging");
+  const rptEnabled = useFeatureFlag("enabled_reporting");
+
+  const flagLookup: Record<string, boolean> = {
+    enabled_workforce_mgmt: wfmEnabled,
+    enabled_messaging: msgEnabled,
+    enabled_reporting: rptEnabled,
+  };
+
+  // ── Admin/HR Navigation ─────────────────────────────────────
+  const adminNavItems: NavItem[] = [
+    { label: "Dashboard", icon: LayoutDashboard, href: "/" },
+    { label: "Attendance", icon: Clock, href: "/attendance" },
+    { label: "Geofences", icon: Map, href: "/geofences" },
+    { label: "Employees", icon: Users, href: "/employees" },
+    { label: "Payroll", icon: DollarSign, href: "/payroll" },
+    // Workforce Management (flag-gated)
+    { label: "Schedule", icon: CalendarClock, href: "/schedule", flag: "enabled_workforce_mgmt" },
+    { label: "Time Sheets", icon: Calendar, href: "/timesheets", flag: "enabled_workforce_mgmt" },
+    { label: "Leave", icon: Umbrella, href: "/leave", flag: "enabled_workforce_mgmt" },
+    // Messaging (flag-gated)
+    { label: "Messages", icon: MessageSquare, href: "/messages", flag: "enabled_messaging" },
+    // Reporting (flag-gated)
+    { label: "Reports", icon: BarChart3, href: "/reports", flag: "enabled_reporting" },
+    // Always visible
+    { label: "CRM Panel", icon: Shield, href: "/crm" },
+    { label: "Settings", icon: Settings, href: "/settings" },
+  ];
+
+  // ── Employee Navigation ─────────────────────────────────────
+  const employeeNavItems: NavItem[] = [
+    { label: "Dashboard", icon: LayoutDashboard, href: "/" },
+    { label: "Clock In/Out", icon: MapPin, href: "/clock" },
+    { label: "My Attendance", icon: Clock, href: "/attendance" },
+    { label: "Pay Stubs", icon: DollarSign, href: "/pay-stubs" },
+    // Workforce Management (flag-gated)
+    { label: "My Schedule", icon: CalendarClock, href: "/schedule", flag: "enabled_workforce_mgmt" },
+    { label: "Leave", icon: Umbrella, href: "/leave", flag: "enabled_workforce_mgmt" },
+    // Messaging (flag-gated)
+    { label: "Messages", icon: MessageSquare, href: "/messages", flag: "enabled_messaging" },
+    // Always visible
+    { label: "Settings", icon: Settings, href: "/settings" },
+  ];
+
+  const rawNav = isAdmin || isHR ? adminNavItems : employeeNavItems;
+
+  // Filter by feature flags
+  const nav = rawNav.filter(item => {
+    if (!item.flag) return true;
+    return flagLookup[item.flag] ?? false;
+  });
+
   const initials = `${(profile?.first_name?.[0] || "").toUpperCase()}${(profile?.last_name?.[0] || "").toUpperCase()}` || "U";
 
   return (

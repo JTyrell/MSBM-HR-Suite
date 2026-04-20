@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +17,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// ── Helpers ──────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function generateCircleGeoJSON(
   lat: number,
   lng: number,
@@ -39,28 +41,16 @@ function generateCircleGeoJSON(
   };
 }
 
-// ── Main Page ────────────────────────────────────────────────
+// â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function Geofences() {
   const { isAdmin, isHR } = useAuth();
-  const [geofences, setGeofences] = useState<any[]>([]);
+  const [geofences, setGeofences] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
-  if (!isAdmin && !isHR) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <Shield className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="font-display text-xl font-bold">Access Denied</h2>
-            <p className="text-muted-foreground mt-2">Only HR administrators and system administrators can manage geofences.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   const fetchGeofences = async () => {
     const { data } = await supabase
@@ -75,7 +65,7 @@ export default function Geofences() {
     fetchGeofences();
   }, []);
 
-  // ── Initialise Overview Map ──
+  // â”€â”€ Initialise Overview Map â”€â”€
   const initOverviewMap = useCallback(() => {
     if (!mapContainerRef.current || geofences.length === 0) return;
     // Destroy existing map on re-render
@@ -100,7 +90,7 @@ export default function Geofences() {
 
     map.on("load", () => {
       const fencesToShow = activeGeofences.length > 0 ? activeGeofences : geofences;
-      fencesToShow.forEach((g: any, idx: number) => {
+      fencesToShow.forEach((g: Record<string, any>, idx: number) => {
         const lat = Number(g.latitude);
         const lng = Number(g.longitude);
         const radius = Number(g.radius_meters) || 100;
@@ -135,7 +125,7 @@ export default function Geofences() {
       // Fit bounds to show all geofences
       if (fencesToShow.length > 1) {
         const bounds = new mapboxgl.LngLatBounds();
-        fencesToShow.forEach((g: any) => bounds.extend([Number(g.longitude), Number(g.latitude)]));
+        fencesToShow.forEach((g: Record<string, any>) => bounds.extend([Number(g.longitude), Number(g.latitude)]));
         map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
       }
     });
@@ -171,6 +161,20 @@ export default function Geofences() {
     if (error) toast.error(error.message);
     else fetchGeofences();
   };
+
+  if (!isAdmin && !isHR) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <Shield className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="font-display text-xl font-bold">Access Denied</h2>
+            <p className="text-muted-foreground mt-2">Only HR administrators and system administrators can manage geofences.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -244,7 +248,7 @@ export default function Geofences() {
                       {Number(g.longitude).toFixed(5)}
                     </TableCell>
                     <TableCell>{g.radius_meters}m</TableCell>
-                    <TableCell>{g.departments?.name || "—"}</TableCell>
+                    <TableCell>{g.departments?.name || "â€”"}</TableCell>
                     <TableCell>
                       <Badge
                         className="cursor-pointer"
@@ -274,7 +278,7 @@ export default function Geofences() {
   );
 }
 
-// ── Geofence Create Form ─────────────────────────────────────
+// â”€â”€ Geofence Create Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function GeofenceForm({ onSuccess }: { onSuccess: () => void }) {
   const [name, setName] = useState("");
   const [lat, setLat] = useState(40.7128);

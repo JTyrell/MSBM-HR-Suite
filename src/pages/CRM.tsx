@@ -28,7 +28,8 @@ type Profile = {
 };
 type UserRole = { id: string; user_id: string; role: "admin" | "hr_manager" | "employee"; created_at: string };
 type Department = { id: string; name: string; description: string | null; created_at: string };
-type AuditLog = { id: string; actor_id: string; action: string; entity_type: string; entity_id: string | null; details: any; created_at: string };
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+type AuditLog = { id: string; actor_id: string; action: string; entity_type: string; entity_id: string | null; details: Record<string, Json>; created_at: string };
 
 const ROLE_COLORS: Record<string, string> = { admin: "destructive", hr_manager: "default", employee: "secondary" };
 
@@ -69,7 +70,7 @@ export default function CRMPage() {
     department_id: "", pay_rate: "", pay_type: "hourly" as string, status: "active",
   });
 
-  const logAudit = useCallback(async (action: string, entity_type: string, entity_id: string | null, details: any = {}) => {
+  const logAudit = useCallback(async (action: string, entity_type: string, entity_id: string | null, details: Record<string, Json> = {}) => {
     if (!user) return;
     await supabase.from("audit_logs").insert({ actor_id: user.id, action, entity_type, entity_id, details });
   }, [user]);
@@ -104,6 +105,7 @@ export default function CRMPage() {
   });
 
   const getActorName = (actorId: string) => {
+    if (!actorId) return "System";
     const p = profiles.find((pr) => pr.user_id === actorId);
     return p ? `${p.first_name} ${p.last_name}` : actorId.slice(0, 8);
   };
@@ -161,7 +163,7 @@ export default function CRMPage() {
   const addRole = async () => {
     if (!roleDialog || saving) return;
     setSaving(true);
-    const { error } = await supabase.from("user_roles").insert({ user_id: roleDialog.userId, role: newRole as any });
+    const { error } = await supabase.from("user_roles").insert({ user_id: roleDialog.userId, role: newRole as "admin" | "hr_manager" | "employee" });
     if (error) { toast.error(error.code === "23505" ? "User already has this role" : error.message); setSaving(false); return; }
     await logAudit("role_added", "user_role", roleDialog.userId, { role: newRole, user_name: roleDialog.userName });
     toast.success("Role added");
@@ -244,7 +246,7 @@ export default function CRMPage() {
       for (const profileId of ids) {
         const p = profiles.find((pr) => pr.id === profileId);
         if (!p) continue;
-        const { error } = await supabase.from("user_roles").insert({ user_id: p.user_id, role: bulkValue as any });
+        const { error } = await supabase.from("user_roles").insert({ user_id: p.user_id, role: bulkValue as "admin" | "hr_manager" | "employee" });
         if (!error) successCount++;
       }
       await logAudit("bulk_role_add", "user_role", null, { count: successCount, role: bulkValue, users: names });
@@ -330,7 +332,7 @@ export default function CRMPage() {
                 {profiles.slice(0, 5).map((p) => (
                   <div key={p.id} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{p.first_name[0]}{p.last_name[0]}</div>
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{p.first_name?.[0]}{p.last_name?.[0]}</div>
                       <div><p className="font-medium">{p.first_name} {p.last_name}</p><p className="text-xs text-muted-foreground">{p.email}</p></div>
                     </div>
                     <Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge>
@@ -387,13 +389,13 @@ export default function CRMPage() {
                             <TableCell><Checkbox checked={selectedUsers.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} /></TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">{p.first_name[0]}{p.last_name[0]}</div>
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">{p.first_name?.[0]}{p.last_name?.[0]}</div>
                                 <div><p className="font-medium text-sm">{p.first_name} {p.last_name}</p><p className="text-xs text-muted-foreground">{p.email}</p></div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1 flex-wrap">
-                                {userRoles.map((r) => (<Badge key={r.id} variant={ROLE_COLORS[r.role] as any} className="text-xs capitalize">{r.role.replace("_", " ")}</Badge>))}
+                                {userRoles.map((r) => (<Badge key={r.id} variant={ROLE_COLORS[r.role] as "default" | "destructive" | "secondary"} className="text-xs capitalize">{r.role.replace("_", " ")}</Badge>))}
                               </div>
                             </TableCell>
                             <TableCell className="text-sm">{p.departments?.name || "—"}</TableCell>
@@ -431,7 +433,7 @@ export default function CRMPage() {
                     return (
                       <TableRow key={r.id}>
                         <TableCell className="font-medium text-sm">{name}</TableCell>
-                        <TableCell><Badge variant={ROLE_COLORS[r.role] as any} className="capitalize">{r.role.replace("_", " ")}</Badge></TableCell>
+                        <TableCell><Badge variant={ROLE_COLORS[r.role] as "default" | "destructive" | "secondary"} className="capitalize">{r.role.replace("_", " ")}</Badge></TableCell>
                         <TableCell className="text-sm text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => removeRole(r.id, r.role, name)} title="Remove"><Trash2 className="h-4 w-4" /></Button>
@@ -490,11 +492,11 @@ export default function CRMPage() {
                       const Icon = ACTION_ICONS[log.action] || FileText;
                       return (
                         <TableRow key={log.id}>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{log.created_at ? new Date(log.created_at).toLocaleString() : "—"}</TableCell>
                           <TableCell className="text-sm font-medium">{getActorName(log.actor_id)}</TableCell>
-                          <TableCell><Badge variant="outline" className="gap-1 capitalize text-xs"><Icon className="h-3 w-3" />{log.action.replace(/_/g, " ")}</Badge></TableCell>
-                          <TableCell className="text-sm">{log.entity_type}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{log.details?.user_name || log.details?.name || log.details?.role || JSON.stringify(log.details).slice(0, 60)}</TableCell>
+                          <TableCell><Badge variant="outline" className="gap-1 capitalize text-xs"><Icon className="h-3 w-3" />{log.action?.replace(/_/g, " ") ?? "—"}</Badge></TableCell>
+                          <TableCell className="text-sm">{log.entity_type ?? "—"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{String(log.details?.user_name || log.details?.name || log.details?.role || (log.details ? JSON.stringify(log.details).slice(0, 60) : "—"))}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -574,7 +576,7 @@ export default function CRMPage() {
                     <div key={log.id} className="flex gap-3">
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0"><Icon className="h-4 w-4 text-muted-foreground" /></div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm"><span className="font-medium">{getActorName(log.actor_id)}</span> <span className="text-muted-foreground capitalize">{log.action.replace(/_/g, " ")}</span> {log.details?.user_name || log.details?.name || ""}</p>
+                        <p className="text-sm"><span className="font-medium">{getActorName(log.actor_id)}</span> <span className="text-muted-foreground capitalize">{log.action.replace(/_/g, " ")}</span> {String(log.details?.user_name || log.details?.name || "")}</p>
                         <p className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString()}</p>
                       </div>
                     </div>
@@ -640,7 +642,7 @@ export default function CRMPage() {
                 {roleDialog && getUserRoles(roleDialog.userId).map((r) => {
                   const p = profiles.find((pr) => pr.user_id === roleDialog.userId);
                   return (
-                    <Badge key={r.id} variant={ROLE_COLORS[r.role] as any} className="capitalize gap-1">
+                    <Badge key={r.id} variant={ROLE_COLORS[r.role] as "default" | "destructive" | "secondary"} className="capitalize gap-1">
                       {r.role.replace("_", " ")}
                       <button onClick={() => removeRole(r.id, r.role, p ? `${p.first_name} ${p.last_name}` : undefined)} className="ml-1 hover:text-destructive">×</button>
                     </Badge>

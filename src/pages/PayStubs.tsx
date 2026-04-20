@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +10,7 @@ import { DollarSign } from "lucide-react";
 
 export default function PayStubs() {
   const { user } = useAuth();
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function PayStubs() {
                   <Badge variant={r.status === "finalized" ? "default" : "secondary"}>{r.status}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {r.pay_periods?.start_date && new Date(r.pay_periods.start_date).toLocaleDateString()} — {r.pay_periods?.end_date && new Date(r.pay_periods.end_date).toLocaleDateString()}
+                  {r.pay_periods?.start_date && new Date(r.pay_periods.start_date).toLocaleDateString()} â€” {r.pay_periods?.end_date && new Date(r.pay_periods.end_date).toLocaleDateString()}
                 </p>
               </CardHeader>
               <CardContent>

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +15,7 @@ import { DollarSign, Plus, Play, CheckCircle, Loader2 } from "lucide-react";
 
 export default function Payroll() {
   const { isAdmin, isHR } = useAuth();
-  const [periods, setPeriods] = useState<any[]>([]);
+  const [periods, setPeriods] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -38,8 +40,10 @@ export default function Payroll() {
       if (res.error) throw new Error(res.error.message);
       toast.success(`Payroll calculated: ${res.data?.records_created || 0} records processed`);
       fetchPeriods();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      }
     }
     setProcessing(null);
   };
@@ -100,7 +104,7 @@ export default function Payroll() {
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{new Date(p.start_date).toLocaleDateString()}</TableCell>
                     <TableCell>{new Date(p.end_date).toLocaleDateString()}</TableCell>
-                    <TableCell>{p.pay_date ? new Date(p.pay_date).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell>{p.pay_date ? new Date(p.pay_date).toLocaleDateString() : "â€”"}</TableCell>
                     <TableCell>
                       <Badge variant={
                         p.status === "completed" ? "default" :

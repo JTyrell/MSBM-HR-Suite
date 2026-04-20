@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Users, DollarSign, MapPin, AlertTriangle, CheckCircle } from "lucide-react";
+import { Clock, Users, DollarSign, MapPin, AlertTriangle, CheckCircle, LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -97,7 +97,7 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
+function StatCard({ icon: Icon, label, value, color }: { icon: LucideIcon; label: string; value: number; color: string }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4 py-5">

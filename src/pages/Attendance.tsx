@@ -8,9 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, Search } from "lucide-react";
 
+interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  status: string;
+  clock_in: string;
+  clock_out: string | null;
+  profiles?: { first_name: string; last_name: string };
+  geofences?: { name: string };
+}
+
 export default function Attendance() {
   const { user, isAdmin, isHR } = useAuth();
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

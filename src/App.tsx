@@ -16,6 +16,10 @@ import Payroll from "./pages/Payroll";
 import PayStubs from "./pages/PayStubs";
 import SettingsPage from "./pages/Settings";
 import CRMPage from "./pages/CRM";
+import Schedule from "./pages/Schedule";
+import LeaveManagement from "./pages/LeaveManagement";
+import Messaging from "./pages/Messaging";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +49,13 @@ const App = () => (
               <Route path="/pay-stubs" element={<PayStubs />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/crm" element={<CRMPage />} />
+              {/* Workforce Management (feature-flag gated at page level) */}
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/leave" element={<LeaveManagement />} />
+              {/* Messaging (feature-flag gated at page level) */}
+              <Route path="/messages" element={<Messaging />} />
+              {/* Reporting (feature-flag gated at page level) */}
+              <Route path="/reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
