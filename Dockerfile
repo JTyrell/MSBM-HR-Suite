@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
 ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 
 COPY . .
 RUN npm run build
@@ -24,12 +24,15 @@ RUN npm run build
 # ── Stage 2: Serve ────────────────────────────────────────────
 FROM nginx:alpine
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config as a template (contains ${PORT})
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+# Railway injects $PORT; nginx:alpine's docker-entrypoint auto-runs
+# envsubst on /etc/nginx/templates/*.template → /etc/nginx/conf.d/
+# Default to port 80 if $PORT is not set
+ENV PORT=80
 
 CMD ["nginx", "-g", "daemon off;"]

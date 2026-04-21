@@ -1,3 +1,15 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Environment & secrets
+.env
+.env.*
+*.local
+
 # Logs
 logs
 *.log
@@ -7,23 +19,35 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Debug / scratch output
+out*.txt
+lint-output.txt
+
+# Bun lock files (npm is the package manager)
+bun.lock
+bun.lockb
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.out
-.out2
-.out3
-.out4
-.out5
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+Thumbs.db
+
+# Lovable AI memory (not needed in deploy)
+.lovable
+
+# Gemini AI context
+.gemini
+
+# OS files
+desktop.ini
+
+# Local-only config (not for Railway)
+fly.toml
+seed-admin.mjs

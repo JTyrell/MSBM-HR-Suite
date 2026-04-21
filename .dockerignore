@@ -1,11 +1,43 @@
+# Dependencies (rebuilt inside container)
 node_modules
+
+# Build output (rebuilt inside container)
 dist
+
+# Source control
 .git
 .gitignore
+
+# Environment (Railway injects these as build args)
 .env
+.env.*
+
+# AI tool directories
 .lovable
+.gemini
+
+# Documentation (not needed in image)
 *.md
+
+# Bun lock files
 bun.lock
 bun.lockb
+
+# Testing (not needed in production image)
+src/test
+vitest.config.ts
+eslint.config.js
+
+# Supabase edge functions (deployed separately)
 supabase
-.gemini
+
+# Scratch / debug logs
+out*.txt
+lint-output.txt
+*.log
+
+# Seed scripts
+seed-admin.mjs
+
+# Fly.io config (not relevant for Railway)
+fly.toml
