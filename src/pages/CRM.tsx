@@ -97,7 +97,7 @@ export default function CRMPage() {
     setDepartments((d.data as Department[]) || []);
     setAuditLogs((a.data as AuditLog[]) || []);
     setJaComplianceEnabled(ff.data?.enabled === true);
-    setRoleTiers((rt.data as any[]) || []);
+    setRoleTiers((rt.data as { id: string; name: string; level: number }[]) || []);
     setLoading(false);
   }, []);
 
@@ -641,7 +641,7 @@ export default function CRMPage() {
               <div className="border-t pt-4 mt-4">
                 <JaComplianceFields
                   profileId={editUser.id}
-                  initialData={editUser as any}
+                  initialData={editUser as Record<string, unknown>}
                   roleTiers={roleTiers}
                   managers={profiles.filter((p) => p.id !== editUser.id).map((p) => ({ user_id: p.user_id, first_name: p.first_name, last_name: p.last_name }))}
                   onUpdate={fetchAll}

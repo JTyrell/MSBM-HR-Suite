@@ -62,7 +62,13 @@ serve(async (req) => {
     }
 
     // If JA compliance is enabled, fetch statutory rates
-    let statutoryRates: any[] = [];
+    interface StatutoryRate {
+      rate_type: string;
+      rate_value: number;
+      ceiling_amount: number | null;
+    }
+    
+    let statutoryRates: StatutoryRate[] = [];
     if (jaComplianceEnabled) {
       const effectiveDate = period.end_date;
       const { data: rates } = await supabase
@@ -75,7 +81,7 @@ serve(async (req) => {
     }
 
     // Build rate lookup map
-    const rateMap = new Map<string, any>();
+    const rateMap = new Map<string, StatutoryRate>();
     for (const rate of statutoryRates) {
       if (!rateMap.has(rate.rate_type)) {
         rateMap.set(rate.rate_type, rate);
@@ -127,7 +133,7 @@ serve(async (req) => {
 
       let taxDeductions: number;
       let benefitDeductions: number;
-      let otherDeductions = 0;
+      const otherDeductions = 0;
       let notes = "";
 
       if (jaComplianceEnabled) {
