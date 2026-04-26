@@ -12,6 +12,27 @@ serve(async (req) => {
   }
 
   try {
+    // ── Authenticate caller (admin/HR only) ─────────────────
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const supabaseUrlAuth = Deno.env.get("SUPABASE_URL")!;
+    const callerClient = createClient(supabaseUrlAuth, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: caller }, error: authError } = await callerClient.auth.getUser();
+    if (authError || !caller) {
+      return new Response(
+        JSON.stringify({ error: "Invalid session" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
     const { pay_period_id } = await req.json();
 
     if (!pay_period_id) {
@@ -24,6 +45,17 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify role
+    const { data: callerRoles } = await supabase
+      .from("user_roles").select("role").eq("user_id", caller.id);
+    const roles = (callerRoles || []).map((r: { role: string }) => r.role);
+    if (!roles.includes("admin") && !roles.includes("hr_manager")) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
+      );
+    }
 
     // Check if JA compliance is enabled
     const { data: jaFlag } = await supabase
@@ -227,8 +259,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("[calculate-payroll] Error:", error);
     return new Response(
-      JSON.stringify({ error: (error as Error).message }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
