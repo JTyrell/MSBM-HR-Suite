@@ -150,8 +150,9 @@ serve(async (req) => {
     );
   } catch (error) {
     const headers2 = corsHeaders(req.headers.get("origin"));
+    console.error("[validate-geofence] Error:", error);
     return new Response(
-      JSON.stringify({ valid: false, message: (error as Error).message }),
+      JSON.stringify({ valid: false, message: "An unexpected error occurred" }),
       { headers: { ...headers2, "Content-Type": "application/json" }, status: 500 }
     );
   }
