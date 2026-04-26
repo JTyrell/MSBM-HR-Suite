@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          author_id: string
+          body: string | null
+          created_at: string
+          department_id: string | null
+          id: string
+          published_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body?: string | null
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          published_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string | null
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          published_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "announcements_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_requests: {
         Row: {
           approver_id: string | null
@@ -254,6 +302,7 @@ export type Database = {
           created_at: string
           created_by: string
           department_id: string | null
+          description: string | null
           id: string
           name: string
           updated_at: string
@@ -263,6 +312,7 @@ export type Database = {
           created_at?: string
           created_by: string
           department_id?: string | null
+          description?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -272,6 +322,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           department_id?: string | null
+          description?: string | null
           id?: string
           name?: string
           updated_at?: string
@@ -423,6 +474,42 @@ export type Database = {
           },
         ]
       }
+      leave_balances: {
+        Row: {
+          carried_over: number
+          created_at: string
+          id: string
+          leave_type: string
+          total_days: number
+          updated_at: string
+          used_days: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          carried_over?: number
+          created_at?: string
+          id?: string
+          leave_type: string
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          carried_over?: number
+          created_at?: string
+          id?: string
+          leave_type?: string
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           channel_id: string
@@ -455,6 +542,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "channels"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -789,7 +883,10 @@ export type Database = {
       }
       shifts: {
         Row: {
+          break_minutes: number
+          color: string
           created_at: string
+          created_by: string | null
           department_id: string | null
           employee_id: string
           end_time: string
@@ -798,10 +895,14 @@ export type Database = {
           start_time: string
           status: string
           template_id: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
+          break_minutes?: number
+          color?: string
           created_at?: string
+          created_by?: string | null
           department_id?: string | null
           employee_id: string
           end_time: string
@@ -810,10 +911,14 @@ export type Database = {
           start_time: string
           status?: string
           template_id?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
+          break_minutes?: number
+          color?: string
           created_at?: string
+          created_by?: string | null
           department_id?: string | null
           employee_id?: string
           end_time?: string
@@ -822,6 +927,7 @@ export type Database = {
           start_time?: string
           status?: string
           template_id?: string | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -831,6 +937,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -967,7 +1080,9 @@ export type Database = {
       time_off_requests: {
         Row: {
           approved_by: string | null
+          approver_id: string | null
           created_at: string
+          decided_at: string | null
           employee_id: string
           end_date: string
           id: string
@@ -979,7 +1094,9 @@ export type Database = {
         }
         Insert: {
           approved_by?: string | null
+          approver_id?: string | null
           created_at?: string
+          decided_at?: string | null
           employee_id: string
           end_date: string
           id?: string
@@ -991,7 +1108,9 @@ export type Database = {
         }
         Update: {
           approved_by?: string | null
+          approver_id?: string | null
           created_at?: string
+          decided_at?: string | null
           employee_id?: string
           end_date?: string
           id?: string
@@ -1001,7 +1120,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "time_off_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
