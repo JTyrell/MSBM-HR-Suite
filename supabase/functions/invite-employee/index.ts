@@ -175,8 +175,9 @@ serve(async (req) => {
     );
   } catch (error) {
     const headers2 = corsHeaders(req.headers.get("origin"));
+    console.error("[invite-employee] Error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       { headers: { ...headers2, "Content-Type": "application/json" }, status: 500 }
     );
   }
